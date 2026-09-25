@@ -494,8 +494,40 @@ pub const SDL_Version = extern struct {
 extern fn SDL_GetVersion() c_int; // Returns version number as int (e.g., 3005000 for 3.5.0)
 extern fn SDL_GetRevision() ?[*:0]const u8;
 
+const std = @import("std");
+
+pub const SdlError = error{
+    InitializationFailed,
+};
+
+pub fn wrapError(err: SdlError) SdlError {
+    if (SDL_GetError()) |c_str| {
+        std.log.err("SDL3 Error Trace: {s}", .{c_str});
+    } else {
+        std.log.err("SDL3 Error Trace: Unknown internal failure", .{});
+    }
+    return err;
+}
+
+// pub fn wrapBool(comptime c_func: anytype) *const fn (anytype) SdlError!void {
+//     return struct {
+//         fn wrapper(args: anytype) SdlError!void {
+//             if (!@call(.auto, c_func, .{args})) {
+//                 return wrapError(SdlError.InitializationFailed);
+//             }
+//         }
+//     }.wrapper;
+// }
+// pub const init = wrapBool(SDL_Init);
+
+pub fn init(flags: SDL_InitFlags) SdlError!void {
+    if (!SDL_Init(flags)) {
+        return wrapError(SdlError.InitializationFailed);
+    }
+}
+
 // Public API
-pub const init = SDL_Init;
+// pub const init = SDL_Init;
 pub const initSubSystem = SDL_InitSubSystem;
 pub const quitSubSystem = SDL_QuitSubSystem;
 pub const wasInit = SDL_WasInit;
